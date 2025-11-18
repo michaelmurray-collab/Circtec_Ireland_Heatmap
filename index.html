@@ -229,7 +229,35 @@ document.getElementById('zoomRingsBtn').addEventListener('click', function(){ if
 const heat = L.heatLayer([], {radius:20, blur:25, maxZoom:11});
 const markers = L.markerClusterGroup();
 let current = GARAGES.slice();
-function render(){ heat.setLatLngs(current.map(r=>[r.lat,r.lon])); markers.clearLayers(); current.forEach(function(r){ const dist=(r.distance_km!=null&&!isNaN(r.distance_km))?('<br/><b>'+r.distance_km.toFixed(2)+' km from HQ</b>'):''; const html='<div style="min-width:220px"><b>'+(r.registered_name||'')+'</b>'+(r.trading_as?'<br/><i>(' + r.trading_as + ')</i>':'')+'<br/>'+(r.full_address||'')+(r.county?('<br/><small>'+r.county+'</small>'):'')+dist+'</div>'; const m=mCircle(r.lat,r.lon,'#2e7d32',6).bindPopup(html); markers.addLayer(m); }); document.getElementById('count').textContent=current.length; }
+function render(){
+  // keep only garages with good coordinates
+  const pts = current.filter(function(r){
+    return typeof r.lat === 'number' &&
+           typeof r.lon === 'number' &&
+           !isNaN(r.lat) &&
+           !isNaN(r.lon);
+  });
+
+  // Heat layer
+  heat.setLatLngs(pts.map(function(r){ return [r.lat, r.lon]; }));
+
+  // Marker clusters
+  markers.clearLayers();
+  pts.forEach(function(r){
+    const html =
+      '<div><b>' + (r.trading_as || r.registered_name || '') + '</b>' +
+      '<br/>' + (r.full_address || '') +
+      (r.county ? '<br/>' + r.county : '') +
+      '</div>';
+
+    const m = mCircle(r.lat, r.lon, '#2e7d32', 6).bindPopup(html);
+    markers.addLayer(m);
+  });
+
+  // Update the count label
+  document.getElementById('count').textContent = pts.length;
+}
+
 document.querySelectorAll('input[name="view"]').forEach(function(el){ el.addEventListener('change', function(e){ if(e.target.value==='heat'){ map.addLayer(heat); if(map.hasLayer(markers)) map.removeLayer(markers); } else { if(map.hasLayer(heat)) map.removeLayer(heat); map.addLayer(markers); } }); });
 map.addLayer(heat);
 
