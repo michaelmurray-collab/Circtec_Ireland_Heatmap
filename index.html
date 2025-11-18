@@ -229,7 +229,48 @@ document.getElementById('zoomRingsBtn').addEventListener('click', function(){ if
 const heat = L.heatLayer([], {radius:20, blur:25, maxZoom:11});
 const markers = L.markerClusterGroup();
 let current = GARAGES.slice();
-function render(){ heat.setLatLngs(current.map(r=>[r.lat,r.lon])); markers.clearLayers(); current.forEach(function(r){ const dist=(r.distance_km!=null&&!isNaN(r.distance_km))?('<br/><b>'+r.distance_km.toFixed(2)+' km from HQ</b>'):''; const html='<div style="min-width:220px"><b>'+(r.registered_name||'')+'</b>'+(r.trading_as?'<br/><i>(' + r.trading_as + ')</i>':'')+'<br/>'+(r.full_address||'')+(r.county?('<br/><small>'+r.county+'</small>'):'')+dist+'</div>'; const m=mCircle(r.lat,r.lon,'#2e7d32',6).bindPopup(html); markers.addLayer(m); }); document.getElementById('count').textContent=current.length; }
+  function hasCoords(r) {
+  return r &&
+    typeof r.lat === 'number' && !isNaN(r.lat) &&
+    typeof r.lon === 'number' && !isNaN(r.lon);
+}
+
+function render() {
+  // Only garages with usable coordinates
+  const pts = current.filter(hasCoords);
+
+  // Heat map layer
+  heat.setLatLngs(
+    pts.map(function (r) { return [r.lat, r.lon]; })
+  );
+
+  // Marker clusters
+  markers.clearLayers();
+  pts.forEach(function (r) {
+    const name = r.trading_as || r.registered_name || '';
+    const addr = r.full_address || '';
+    const county = r.county || '';
+    const distText =
+      (r.distance_km != null && !isNaN(r.distance_km))
+        ? ('<br/><b>' + r.distance_km.toFixed(2) + ' km from HQ</b>')
+        : '';
+
+    const html =
+      '<div style="min-width:220px">' +
+        '<b>' + name + '</b>' +
+        '<br/>' + addr +
+        (county ? '<br/><small>' + county + '</small>' : '') +
+        distText +
+      '</div>';
+
+    const m = mCircle(r.lat, r.lon, '#2e7d32', 6).bindPopup(html);
+    markers.addLayer(m);
+  });
+
+  // Count of garages in the current filter (not just plottable ones)
+  document.getElementById('count').textContent = current.length;
+}
+
 document.querySelectorAll('input[name="view"]').forEach(function(el){ el.addEventListener('change', function(e){ if(e.target.value==='heat'){ map.addLayer(heat); if(map.hasLayer(markers)) map.removeLayer(markers); } else { if(map.hasLayer(heat)) map.removeLayer(heat); map.addLayer(markers); } }); });
 map.addLayer(heat);
 
@@ -243,7 +284,18 @@ document.getElementById('withinKm').addEventListener('input', applyFilters);
 document.getElementById('clearFilters').addEventListener('click', function(){ countySel.value=''; document.getElementById('searchBox').value=''; document.getElementById('withinKm').value=''; current=GARAGES.slice(); render(); updateCostSummary(); });
 
 // Distances
-function computeDistances(){ if(!HQ) return; GARAGES.forEach(function(r){ r.distance_km = +(haversineKm(HQ,[r.lat,r.lon])?.toFixed(2) || ''); }); }
+function computeDistances() {
+  if (!HQ) return;
+  GARAGES.forEach(function (r) {
+    if (!hasCoords(r)) {
+      // no valid lat/lon → no distance, and it must NOT go into any band
+      r.distance_km = NaN;
+      return;
+    }
+    const d = haversineKm(HQ, [r.lat, r.lon]);
+    r.distance_km = (d == null || isNaN(d)) ? NaN : d;
+  });
+}
 
 // Collectors
 const collectorsGroup = L.layerGroup().addTo(map);
@@ -251,7 +303,23 @@ function renderCollectors(){ collectorsGroup.clearLayers(); COLLECTORS.forEach(f
 
 // Cost model
 function getCI(){ const fuel=parseFloat(document.getElementById('fuelPerKm').value)||0; const fixed=parseFloat(document.getElementById('fixedPerKm').value)||0; const perStop=parseFloat(document.getElementById('perStop').value)||0; const pickups=parseFloat(document.getElementById('pickupsPerYear').value)||1; return {fuel,fixed,perStop,pickups,totalPerKm:(fuel+fixed)}; }
-function bands(){ const r=getRings(); const b=[[],[],[],[]]; current.forEach(function(g){ const d=g.distance_km; if(isNaN(d)) return; if(d<=r[0]) b[0].push(d); else if(d<=r[1]) b[1].push(d); else if(d<=r[2]) b[2].push(d); else b[3].push(d); }); return {r,b}; }
+function bands() {
+  const r = getRings();             // [R1, R2, R3]
+  const b = [[], [], [], []];       // 0–R1, R1–R2, R2–R3, >R3
+
+  current.forEach(function (g) {
+    const d = g.distance_km;
+    if (d == null || isNaN(d)) return;   // skip anything without a real distance
+
+    if (d <= r[0])      b[0].push(d);
+    else if (d <= r[1]) b[1].push(d);
+    else if (d <= r[2]) b[2].push(d);
+    else                b[3].push(d);
+  });
+
+  return { r, b };
+}
+
 function calcTrip(dist,ci){ return ci.perStop + 2*dist*ci.totalPerKm; }
 function updateCostSummary() {
   const ci = getCI();
