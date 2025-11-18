@@ -226,39 +226,65 @@ document.getElementById('toggleRings').addEventListener('change', refreshRings);
 document.getElementById('zoomRingsBtn').addEventListener('click', function(){ if(!HQ) return; const r=getRings(); const outer=L.circle(HQ,{radius:r[2]*1000}); map.fitBounds(outer.getBounds(),{padding:[20,20]}); });
 
 // Data layers
-const heat = L.heatLayer([], {radius:20, blur:25, maxZoom:11});
+const heat = L.heatLayer([], { radius: 20, blur: 25, maxZoom: 11 });
 const markers = L.markerClusterGroup();
 let current = GARAGES.slice();
-function render(){
-  // keep only garages with good coordinates
-  const pts = current.filter(function(r){
+
+// Helper: only keep garages that have usable coordinates
+function garagesWithCoords(list) {
+  return list.filter(function (r) {
     return typeof r.lat === 'number' &&
            typeof r.lon === 'number' &&
            !isNaN(r.lat) &&
            !isNaN(r.lon);
   });
+}
+
+function render() {
+  const pts = garagesWithCoords(current);
 
   // Heat layer
-  heat.setLatLngs(pts.map(function(r){ return [r.lat, r.lon]; }));
+  heat.setLatLngs(
+    pts.map(function (r) { return [r.lat, r.lon]; })
+  );
 
   // Marker clusters
   markers.clearLayers();
-  pts.forEach(function(r){
+  pts.forEach(function (r) {
+    const dist = (r.distance_km != null && !isNaN(r.distance_km))
+      ? ('<br/><b>' + r.distance_km.toFixed(2) + ' km from HQ</b>')
+      : '';
+
     const html =
-      '<div><b>' + (r.trading_as || r.registered_name || '') + '</b>' +
+      '<div style="min-width:220px"><b>' + (r.registered_name || '') + '</b>' +
+      (r.trading_as ? '<br/><i>(' + r.trading_as + ')</i>' : '') +
       '<br/>' + (r.full_address || '') +
-      (r.county ? '<br/>' + r.county : '') +
+      (r.county ? '<br/><small>' + r.county + '</small>' : '') +
+      dist +
       '</div>';
 
     const m = mCircle(r.lat, r.lon, '#2e7d32', 6).bindPopup(html);
     markers.addLayer(m);
   });
 
-  // Update the count label
+  // Show how many garages are actually plotted
   document.getElementById('count').textContent = pts.length;
 }
 
-document.querySelectorAll('input[name="view"]').forEach(function(el){ el.addEventListener('change', function(e){ if(e.target.value==='heat'){ map.addLayer(heat); if(map.hasLayer(markers)) map.removeLayer(markers); } else { if(map.hasLayer(heat)) map.removeLayer(heat); map.addLayer(markers); } }); });
+// Toggle between heat and markers
+document.querySelectorAll('input[name="view"]').forEach(function (el) {
+  el.addEventListener('change', function (e) {
+    if (e.target.value === 'heat') {
+      map.addLayer(heat);
+      if (map.hasLayer(markers)) map.removeLayer(markers);
+    } else {
+      if (map.hasLayer(heat)) map.removeLayer(heat);
+      map.addLayer(markers);
+    }
+  });
+});
+
+// Default view: heat map
 map.addLayer(heat);
 
 // Filters
@@ -270,8 +296,20 @@ document.getElementById('searchBox').addEventListener('input', applyFilters);
 document.getElementById('withinKm').addEventListener('input', applyFilters);
 document.getElementById('clearFilters').addEventListener('click', function(){ countySel.value=''; document.getElementById('searchBox').value=''; document.getElementById('withinKm').value=''; current=GARAGES.slice(); render(); updateCostSummary(); });
 
-// Distances
-function computeDistances(){ if(!HQ) return; GARAGES.forEach(function(r){ r.distance_km = +(haversineKm(HQ,[r.lat,r.lon])?.toFixed(2) || ''); }); }
+function computeDistances() {
+  if (!HQ) return;
+  GARAGES.forEach(function (r) {
+    if (typeof r.lat === 'number' &&
+        typeof r.lon === 'number' &&
+        !isNaN(r.lat) &&
+        !isNaN(r.lon)) {
+      const d = haversineKm(HQ, [r.lat, r.lon]);
+      r.distance_km = (d == null || isNaN(d)) ? NaN : d;
+    } else {
+      r.distance_km = NaN;
+    }
+  });
+}
 
 // Collectors
 const collectorsGroup = L.layerGroup().addTo(map);
