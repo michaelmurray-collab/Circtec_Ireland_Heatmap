@@ -166,6 +166,7 @@
 </div
 
 <<!-- Leaflet + plugins -->
+<<!-- Leaflet + plugins -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -366,7 +367,6 @@ function applyFilters() {
     }
 
     if (!isNaN(km)) {
-      // only apply within filter to those that have a valid computed distance
       if (r.distance_km == null || isNaN(r.distance_km) || r.distance_km > km) return false;
     }
 
