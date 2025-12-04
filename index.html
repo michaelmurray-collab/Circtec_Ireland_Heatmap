@@ -489,53 +489,54 @@ function mean(arr) {
 }
 
 function updateCostSummary() {
-  const { r, b } = bands();
-  const fuel = parseFloat(fuelEl.value || '0');
-  const fixed = parseFloat(fixedEl.value || '0');
-  const perStop = parseFloat(perStopEl.value || '0');
-  const pickups = parseFloat(pickupsEl.value || '1');
+  const { b } = bands();
+
+  const fuel    = parseFloat(fuelEl?.value || '0');
+  const fixed   = parseFloat(fixedEl?.value || '0');
+  const perStop = parseFloat(perStopEl?.value || '0');
+  const pickups = Math.max(1, parseFloat(pickupsEl?.value || '1'));
 
   const rows = document.querySelectorAll('#costTable tbody tr');
-  const bandsLabels = ['0–R1', 'R1–R2', 'R2–R3', '>R3'];
 
   let totalSites = 0;
   let totalYear = 0;
 
-  rows.forEach(function (row, i) {
-    const sites = b[i].length;
+  rows.forEach((row, i) => {
+    if (i > 3) return; // skip "Total" row if present
+
+    const distances = b[i] || [];
+    const sites = distances.length;
     totalSites += sites;
 
-    const avg = mean(b[i]);
-    const tripEur = isNaN(avg) ? NaN : (2 * avg * (fuel + fixed) + (perStop));
+    const avg = mean(distances);
+    const tripEur = isNaN(avg) ? NaN : (2 * avg * (fuel + fixed) + perStop);
     const perT = isNaN(tripEur) ? NaN : (tripEur / pickups);
 
-    const eurYearBand = (isNaN(tripEur) ? 0 : (tripEur * sites));
+    const eurYearBand = isNaN(tripEur) ? 0 : (tripEur * sites);
     totalYear += eurYearBand;
 
     const tds = row.querySelectorAll('td');
-    tds[1].textContent = sites ? sites : '-';
-    tds[2].textContent = isNaN(avg) ? '-' : avg.toFixed(1);
-    tds[3].textContent = isNaN(tripEur) ? '-' : ('€' + tripEur.toFixed(2));
-    tds[4].textContent = isNaN(perT) ? '-' : ('€' + perT.toFixed(2));
-    tds[5].textContent = sites ? ('€' + eurYearBand.toLocaleString(undefined, { maximumFractionDigits: 2 })) : '-';
+    if (tds.length >= 6) {
+      tds[1].textContent = sites ? String(sites) : '-';
+      tds[2].textContent = isNaN(avg) ? '-' : avg.toFixed(1);
+      tds[3].textContent = isNaN(tripEur) ? '-' : ('€' + tripEur.toFixed(2));
+      tds[4].textContent = isNaN(perT) ? '-' : ('€' + perT.toFixed(2));
+      tds[5].textContent = sites
+        ? ('€' + eurYearBand.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+        : '-';
+    }
   });
 
- const totalSitesEl = document.getElementById('totalSites');
-const totalYearEl  = document.getElementById('totalYear');
+  // Totals (only update if the IDs exist)
+  const totalSitesEl = document.getElementById('totalSites');
+  const totalYearEl  = document.getElementById('totalYear');
 
-if (totalSitesEl) totalSitesEl.textContent = totalSites ? totalSites : '-';
-if (totalYearEl)  totalYearEl.textContent  = totalSites
-  ? ('€' + totalYear.toLocaleString(undefined, { maximumFractionDigits: 2 }))
-  : '-';
+  if (totalSitesEl) totalSitesEl.textContent = totalSites ? String(totalSites) : '-';
+  if (totalYearEl)  totalYearEl.textContent  = totalSites
+    ? ('€' + totalYear.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+    : '-';
+}
 
-
-[fuelEl, fixedEl, perStopEl, pickupsEl].forEach(function (el) {
-  if (el) el.addEventListener('input', function () {
-    render(); // refresh popups
-    updateCostSummary();
-    renderPortsTable();
-  });
-});
 
 // ----- Export CSV (garages) -----
 if (exportBtn) exportBtn.addEventListener('click', function () {
