@@ -163,10 +163,10 @@
       </div>
     </div>
   </div>
-</div
+</div>
 
-<<!-- Leaflet + plugins -->
-<<!-- Leaflet + plugins -->
+<!-- Leaflet + plugins -->
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -245,43 +245,35 @@ const markers = L.markerClusterGroup();
 let HQ = DEFAULT_HQ.slice();
 let current = (typeof GARAGES !== 'undefined' && Array.isArray(GARAGES)) ? GARAGES.slice() : [];
 
-// UI elements
+// UI elements (match IDs in HTML)
 const countEl = document.getElementById('count');
 const hqBadge = document.getElementById('hqBadge');
 const countySel = document.getElementById('countyFilter');
 const searchBox = document.getElementById('searchBox');
 const withinKm = document.getElementById('withinKm');
-const clearBtn = document.getElementById('clearBtn');
-const exportBtn = document.getElementById('exportBtn');
+const clearBtn = document.getElementById('clearFilters');
+const exportBtn = document.getElementById('exportCsvBtn');
 
-const hqAddrInput = document.getElementById('hqAddr');
-const hqLonInput  = document.getElementById('hqLon');
-const setLatLonBtn = document.getElementById('setLatLonBtn');
-const tryGeocodeBtn = document.getElementById('tryGeocodeBtn');
-const setHqByClickBtn = document.getElementById('setHqByClickBtn');
+const hqAddrInput = document.getElementById('hqAddress');
+const setLatLonBtn = document.getElementById('setHqBtn');
+const tryGeocodeBtn = document.getElementById('geocodeHqBtn');
+const setHqByClickBtn = document.getElementById('clickHqBtn');
 
 const ring1El = document.getElementById('ring1km');
 const ring2El = document.getElementById('ring2km');
 const ring3El = document.getElementById('ring3km');
-const showRingsEl = document.getElementById('showRings');
+const showRingsEl = document.getElementById('toggleRings');
 const applyRingsBtn = document.getElementById('applyRingsBtn');
-const zoomBtn = document.getElementById('zoomBtn');
+const zoomBtn = document.getElementById('zoomRingsBtn');
 
-const fuelEl = document.getElementById('fuelEurKm');
-const fixedEl = document.getElementById('fixedEurKm');
+const fuelEl = document.getElementById('fuelPerKm');
+const fixedEl = document.getElementById('fixedPerKm');
 const perStopEl = document.getElementById('perStop');
-const pickupsEl = document.getElementById('pickupsPerSite');
-
-const ringKmEl = document.getElementById('ringKmQuick');
-const bandAvgEl = document.getElementById('bandAvg');
-const ringEdgeEl = document.getElementById('ringEdge');
-const calcRingBtn = document.getElementById('calcRingBtn');
-
-const exportCostBtn = document.getElementById('exportCostBtn');
+const pickupsEl = document.getElementById('pickupsPerYear');
 
 const payloadEl = document.getElementById('payloadT');
-const backhaulEl = document.getElementById('backhaul');
-const includePerStopEl = document.getElementById('includePerStop');
+const backhaulEl = document.getElementById('assumeBackhaul');
+const includePerStopEl = document.getElementById('includePerStopPort');
 const updatePortsBtn = document.getElementById('updatePortsBtn');
 const exportPortsBtn = document.getElementById('exportPortsBtn');
 
