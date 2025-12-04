@@ -521,9 +521,14 @@ function updateCostSummary() {
     tds[5].textContent = sites ? ('€' + eurYearBand.toLocaleString(undefined, { maximumFractionDigits: 2 })) : '-';
   });
 
-  document.getElementById('totalSites').textContent = totalSites ? totalSites : '-';
-  document.getElementById('totalYear').textContent = totalSites ? ('€' + totalYear.toLocaleString(undefined, { maximumFractionDigits: 2 })) : '-';
-}
+ const totalSitesEl = document.getElementById('totalSites');
+const totalYearEl  = document.getElementById('totalYear');
+
+if (totalSitesEl) totalSitesEl.textContent = totalSites ? totalSites : '-';
+if (totalYearEl)  totalYearEl.textContent  = totalSites
+  ? ('€' + totalYear.toLocaleString(undefined, { maximumFractionDigits: 2 }))
+  : '-';
+
 
 [fuelEl, fixedEl, perStopEl, pickupsEl].forEach(function (el) {
   if (el) el.addEventListener('input', function () {
